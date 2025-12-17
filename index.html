@@ -103,12 +103,8 @@
       saida.textContent = "Enviando...";
 
       const turnstileToken =
-        document.querySelector('input[name="cf-turnstile-response"]')?.value;
+  document.querySelector('input[name="cf-turnstile-response"]')?.value || "";
 
-      if (!turnstileToken) {
-        saida.textContent = "⚠️ Confirme o anti-robô antes de enviar.";
-        return;
-      }
 
       const fd = new FormData(e.target);
 
@@ -121,30 +117,51 @@
       };
 
       try {
-        const r = await fetch(`${API_BASE}/api/cadastro`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload)
-        });
+        <script>
+  const API_BASE = "https://api-cadastros.equipe33pelpe.workers.dev";
 
-        const data = await r.json();
+  document.getElementById("form").addEventListener("submit", async (e) => {
+    e.preventDefault();
 
-        if (!r.ok) {
-          saida.textContent = "❌ Erro: " + (data.error || "Erro desconhecido");
-          return;
-        }
+    const saida = document.getElementById("saida");
+    saida.textContent = "Enviando...";
 
-        saida.textContent =
-          `✅ Cadastro enviado com sucesso!\n\n` +
-          `📄 Protocolo: ${data.protocolo}\n\n` +
-          `📎 Envie seus documentos por WhatsApp ou E-mail ` +
-          `informando esse protocolo na mensagem.`;
+    const turnstileToken =
+      document.querySelector('input[name="cf-turnstile-response"]')?.value || "";
 
-        e.target.reset();
-      } catch (err) {
-        saida.textContent = "❌ Falha de conexão com o servidor.";
+    const fd = new FormData(e.target);
+
+    const payload = {
+      nome: fd.get("nome"),
+      cpf: fd.get("cpf"),
+      telefone: fd.get("telefone"),
+      email: fd.get("email"),
+      turnstileToken
+    };
+
+    try {
+      const r = await fetch(`${API_BASE}/api/cadastro`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await r.json();
+
+      if (!r.ok) {
+        saida.textContent = "❌ Erro: " + (data.error || "Erro desconhecido");
+        return;
       }
-    });
-  </script>
+
+      saida.textContent =
+        `✅ Cadastro enviado com sucesso!\n\n` +
+        `📄 Protocolo: ${data.protocolo}`;
+
+      e.target.reset();
+    } catch {
+      saida.textContent = "❌ Falha de conexão com o servidor.";
+    }
+  });
+</script>
 </body>
 </html>
