@@ -1,41 +1,115 @@
 <!doctype html>
-<html>
+<html lang="pt-BR">
 <head>
   <meta charset="utf-8" />
   <title>Cadastro de Acesso</title>
+
+  <!-- Turnstile -->
   <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+
+  <style>
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      background: #f4f6f8;
+      margin: 0;
+      padding: 0;
+    }
+
+    .container {
+      max-width: 420px;
+      margin: 40px auto;
+      background: #ffffff;
+      padding: 25px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    label {
+      font-weight: bold;
+    }
+
+    input {
+      width: 100%;
+      padding: 8px;
+      margin-top: 4px;
+      margin-bottom: 12px;
+      box-sizing: border-box;
+    }
+
+    button {
+      width: 100%;
+      padding: 10px;
+      font-size: 16px;
+      background: #0057b7;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #004199;
+    }
+
+    pre {
+      white-space: pre-wrap;
+      margin-top: 15px;
+      font-size: 14px;
+    }
+  </style>
 </head>
+
 <body>
-  <h1>Cadastro</h1>
+  <div class="container">
+    <h1>Cadastro</h1>
 
-  <form id="form">
-    <label>Nome</label><br>
-    <input name="nome" required><br><br>
+    <form id="form">
+      <label>Nome</label>
+      <input name="nome" required>
 
-    <label>CPF</label><br>
-    <input name="cpf" required><br><br>
+      <label>CPF</label>
+      <input name="cpf" required>
 
-    <label>Telefone</label><br>
-    <input name="telefone"><br><br>
+      <label>Telefone</label>
+      <input name="telefone">
 
-    <label>E-mail</label><br>
-    <input name="email" type="email"><br><br>
+      <label>E-mail</label>
+      <input name="email" type="email">
 
-    <div class="cf-turnstile" data-sitekey="COLE_AQUI_SUA_SITE_KEY"></div>
-    <br>
+      <!-- Turnstile -->
+      <div class="cf-turnstile"
+           data-sitekey="0x4AAAAAACHHEqtQ9u4ovxM5"></div>
 
-    <button type="submit">Enviar</button>
-  </form>
+      <br>
 
-  <pre id="saida"></pre>
+      <button type="submit">Enviar</button>
+    </form>
+
+    <pre id="saida"></pre>
+  </div>
 
   <script>
-    const API_BASE = "COLE_AQUI_A_URL_DO_SEU_WORKER"; // ex: https://api-cadastros.seuuser.workers.dev
+    const API_BASE = "https://api-cadastros.equipe33pelpe.workers.dev";
 
     document.getElementById("form").addEventListener("submit", async (e) => {
       e.preventDefault();
 
-      const turnstileToken = document.querySelector('input[name="cf-turnstile-response"]')?.value;
+      const saida = document.getElementById("saida");
+      saida.textContent = "Enviando...";
+
+      const turnstileToken =
+        document.querySelector('input[name="cf-turnstile-response"]')?.value;
+
+      if (!turnstileToken) {
+        saida.textContent = "⚠️ Confirme o anti-robô antes de enviar.";
+        return;
+      }
+
       const fd = new FormData(e.target);
 
       const payload = {
@@ -46,24 +120,30 @@
         turnstileToken
       };
 
-      const r = await fetch(`${API_BASE}/api/cadastro`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      });
+      try {
+        const r = await fetch(`${API_BASE}/api/cadastro`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
 
-      const data = await r.json();
-      const saida = document.getElementById("saida");
+        const data = await r.json();
 
-      if (!r.ok) {
-        saida.textContent = "Erro: " + (data.error || "desconhecido");
-        return;
+        if (!r.ok) {
+          saida.textContent = "❌ Erro: " + (data.error || "Erro desconhecido");
+          return;
+        }
+
+        saida.textContent =
+          `✅ Cadastro enviado com sucesso!\n\n` +
+          `📄 Protocolo: ${data.protocolo}\n\n` +
+          `📎 Envie seus documentos por WhatsApp ou E-mail ` +
+          `informando esse protocolo na mensagem.`;
+
+        e.target.reset();
+      } catch (err) {
+        saida.textContent = "❌ Falha de conexão com o servidor.";
       }
-
-      saida.textContent =
-        `✅ Cadastro enviado!\n\nSeu protocolo é: ${data.protocolo}\n\n` +
-        `📎 Envie seus documentos pelo WhatsApp/E-mail e informe esse protocolo na mensagem.`;
-      e.target.reset();
     });
   </script>
 </body>
