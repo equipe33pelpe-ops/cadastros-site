@@ -1,0 +1,92 @@
+<!doctype html>
+<html>
+<head><meta charset="utf-8" /><title>Admin</title></head>
+<body>
+  <h1>Painel Admin</h1>
+
+  <div id="loginBox">
+    <input id="user" placeholder="Usuário"><br><br>
+    <input id="pass" placeholder="Senha" type="password"><br><br>
+    <button id="loginBtn">Entrar</button>
+  </div>
+
+  <div id="painel" style="display:none;">
+    <label>Status:</label>
+    <select id="status">
+      <option>PENDENTE</option>
+      <option>APROVADO</option>
+      <option>REPROVADO</option>
+      <option>CORRECAO</option>
+    </select>
+    <button id="carregar">Carregar</button>
+
+    <ul id="lista"></ul>
+  </div>
+
+  <script>
+    const API_BASE = "COLE_AQUI_A_URL_DO_SEU_WORKER";
+    let token = "";
+
+    document.getElementById("loginBtn").onclick = async () => {
+      const username = document.getElementById("user").value;
+      const password = document.getElementById("pass").value;
+
+      const r = await fetch(`${API_BASE}/api/admin/login`, {
+        method: "POST",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify({username, password})
+      });
+
+      const data = await r.json();
+      if (!r.ok) { alert(data.error || "Erro"); return; }
+
+      token = data.token;
+      document.getElementById("loginBox").style.display = "none";
+      document.getElementById("painel").style.display = "block";
+    };
+
+    document.getElementById("carregar").onclick = async () => {
+      const status = document.getElementById("status").value;
+
+      const r = await fetch(`${API_BASE}/api/admin/cadastros?status=${encodeURIComponent(status)}`, {
+        headers: { "x-admin-token": token }
+      });
+
+      const data = await r.json();
+      if (!r.ok) { alert(data.error || "Erro"); return; }
+
+      const ul = document.getElementById("lista");
+      ul.innerHTML = "";
+
+      for (const item of data.items) {
+        const li = document.createElement("li");
+        li.innerHTML = `
+          <b>${item.protocolo}</b> - ${item.nome} (CPF: ${item.cpf}) - ${item.status}
+          <button data-id="${item.id}" data-status="APROVADO">Aprovar</button>
+          <button data-id="${item.id}" data-status="REPROVADO">Reprovar</button>
+          <button data-id="${item.id}" data-status="CORRECAO">Correção</button>
+        `;
+        ul.appendChild(li);
+      }
+
+      ul.querySelectorAll("button").forEach(btn => {
+        btn.onclick = async () => {
+          const id = btn.getAttribute("data-id");
+          const status = btn.getAttribute("data-status");
+          const observacao_admin = prompt("Observação (opcional):") || "";
+
+          const r2 = await fetch(`${API_BASE}/api/admin/cadastros/${id}`, {
+            method: "PATCH",
+            headers: { "Content-Type":"application/json", "x-admin-token": token },
+            body: JSON.stringify({ status, observacao_admin })
+          });
+
+          const data2 = await r2.json();
+          if (!r2.ok) { alert(data2.error || "Erro"); return; }
+          alert("Atualizado!");
+        };
+      });
+    };
+  </script>
+</body>
+</html>
